@@ -11,10 +11,17 @@ import UIKit
 class WeatherListTableTableViewController: UITableViewController {
     
      private var weatherListViewModel = WeatherListViewModel()
+     private var lastUnitSelection: Unit!
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        
         navigationController?.navigationBar.prefersLargeTitles = true
+        let userDefaults = UserDefaults.standard
+        if let value = userDefaults.value(forKey: "unit") as? String {
+            self.lastUnitSelection = Unit(rawValue: value)
+        }
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
@@ -24,6 +31,8 @@ class WeatherListTableTableViewController: UITableViewController {
             
         } else if segue.identifier == "SettingsTableViewController" {
             prepareSegueForSettingstableViewController(segue: segue)
+        } else if segue.identifier == "WeatherDetailsViewController" {
+            prepareSegureForWeatherDetailsViewController(segue: segue)
         }
         
     }
@@ -50,6 +59,16 @@ class WeatherListTableTableViewController: UITableViewController {
         }
         
         settingsTVC.delegate = self
+    }
+    
+    private func prepareSegureForWeatherDetailsViewController(segue: UIStoryboardSegue) {
+        guard let weatherDetailsVC = segue.destination as? WeatherDetailsViewController,
+        let indexPath = tableView.indexPathForSelectedRow else {
+            return
+        }
+        
+        let weatherVM = weatherListViewModel.modelAt(indexPath.row)
+        weatherDetailsVC.weatherViewModel = weatherVM
     }
 
 }
@@ -96,6 +115,11 @@ extension WeatherListTableTableViewController : AddWeatherDelegate {
 
 extension WeatherListTableTableViewController: SettingsDelegate {
     func settingsDone(vm: SettingsViewModel) {
-        
+        if self.lastUnitSelection.rawValue != vm.selectedUnit.rawValue {
+            weatherListViewModel.updateUnit(to: vm.selectedUnit)
+            tableView.reloadData()
+            self.lastUnitSelection = Unit(rawValue: vm.selectedUnit.rawValue)
+        }
+       
     }
 }
